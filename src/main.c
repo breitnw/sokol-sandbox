@@ -1,19 +1,5 @@
-#define SOKOL_IMPL
-#define SOKOL_GLCORE
-
-#include <sokol/sokol_app.h>
-#include <sokol/sokol_gfx.h>
-#include <sokol/sokol_glue.h>
-#include <sokol/sokol_log.h>
-
+#include "main.h"
 #include "shaders/triangle.glsl.h"
-
-// application state
-static struct {
-  sg_pipeline pip;
-  sg_bindings bind;
-  sg_pass_action pass_action;
-} state;
 
 static void init(void) {
   sg_setup(&(sg_desc){

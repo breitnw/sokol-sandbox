@@ -6,7 +6,7 @@ out vec4 color;
 
 void main() {
     gl_Position = position;
-    color = color0;
+    color = color0 * 0.8;
 }
 @end
 
