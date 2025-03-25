@@ -37,7 +37,7 @@ $(TARGET_EXEC): $(OBJS)
 # Build step for C source
 CPPFLAGS := $(INC_FLAGS) -MMD -MP # generate .d files for dependencies
 
-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c | shaders
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c | $(SHADER_GENS)
 	mkdir -p $(dir $@)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
