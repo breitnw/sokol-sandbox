@@ -1,5 +1,6 @@
-.direnv/
 src/generated/
 out/
+*.glsl.h
 .cache/
 .ccls-cache/
+.direnv/

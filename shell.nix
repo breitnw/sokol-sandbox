@@ -1,5 +1,15 @@
 let
   pkgs = import <nixpkgs> { };
+
+  sokol-new = (pkgs.sokol.overrideAttrs {
+    src = pkgs.fetchFromGitHub {
+      owner = "floooh";
+      repo = "sokol";
+      rev = "bcdf25ae58c4fe82cd444ea1ce3f1b8f2532c7ed";
+      sha256 = "sha256-UxwDs5VOAP2smbPjpopGTcFWblqOixwZ0owayWWUDko=";
+    };
+  });
+
   sokol-tools-bin = let
     directory = let
       directories = {
@@ -16,8 +26,8 @@ let
     src = pkgs.fetchFromGitHub {
       owner = "floooh";
       repo = "sokol-tools-bin";
-      rev = "339ff0314f19414c248cd540b7c72de1873f3a4b";
-      hash = "sha256-VkDdHsEpTII75vstFATc505d8SJ6XuKPqd3hS3txuJY=";
+      rev = "9b5a3e2b57fe9783ba4d1f3249059bc4720b592f";
+      hash = "sha256-E9riz9zpkdpIejwWgAsLFP/u40U5kb1WohIDOPE7ycw";
     };
     nativeBuildInputs = [ pkgs.autoPatchelfHook ];
 
@@ -37,9 +47,9 @@ in pkgs.mkShell rec {
     llvmPackages.clang-tools
 
     # libraries
-    sokol
-    alsa-lib.dev
+    sokol-new
     libGL.dev
+    alsa-lib.dev
     xorg.libX11.dev
     xorg.libXi.dev
     xorg.libXcursor.dev
@@ -48,5 +58,4 @@ in pkgs.mkShell rec {
     sokol-tools-bin
   ];
   LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath (buildInputs ++ nativeBuildInputs);
-  CPATH = pkgs.lib.makeSearchPathOutput "dev" "include" buildInputs;
 }

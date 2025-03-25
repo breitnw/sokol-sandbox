@@ -4,7 +4,8 @@
 # @file
 # @version 0.1
 
-CFLAGS := -std=c2x -Wall -Wextra
+CFLAGS := -std=c2x -Wall -Wextra -pthread
+LDFLAGS := -lGL -ldl -lm -lX11 -lasound -lXi -lXcursor
 
 TARGET_EXEC := sandbox
 BUILD_DIR := out
@@ -12,29 +13,19 @@ SRC_DIR := src
 
 # GENERATED CODE ======================================================
 
-SHADER_SRC_DIR := $(SRC_DIR)/shaders
-SHADER_GEN_DIR := $(SRC_DIR)/generated
-
 # Find all the GLSL files we want to compile
-SHADER_SRCS := $(shell find $(SHADER_SRC_DIR) -name '*.glsl')
-SHADER_GENS := $(SHADER_SRCS:$(SHADER_SRC_DIR)/%.glsl=$(SHADER_GEN_DIR)/%.glsl.h)
+SHADER_SRCS := $(shell find $(SRC_DIR) -name '*.glsl')
+SHADER_GENS := $(SHADER_SRCS:.glsl=.glsl.h)
 
 # Build step for shaders
-$(SHADER_GEN_DIR)/%.glsl.h: $(SHADER_SRC_DIR)/%.glsl
-	mkdir -p $(dir $@)
-	sokol-shdc --input $< --output $@ --slang glsl430
+%.glsl.h: %.glsl
+	sokol-shdc -i $< -l "glsl430" -o $@
 
 # EXECUTABLE ==========================================================
 
 # Find all the C files we want to compile
 SRCS := $(shell find $(SRC_DIR) -name '*.c')
 OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
-
-# Directories to include
-SHADER_SRC_DIRS := $(shell find $(SHADER_SRC_DIR) -type d)
-SHADER_GEN_DIRS := $(SHADER_SRC_DIRS:$(SHADER_SRC_DIR)=$(SHADER_GEN_DIR))
-INC_DIRS := $(shell find $(SRC_DIR) -type d) $(SHADER_GEN_DIRS)
-INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 
 # The -MMD and -MP flags together generate Makefiles, looking
 # at #includes and specifying them as dependencies
@@ -52,13 +43,16 @@ $(BUILD_DIR)/%.c.o: %.c shaders
 	mkdir -p $(dir $@)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
-.PHONY: clean all shaders
+# PHONY TARGETS =======================================================
+
+.PHONY: all shaders clean
+
 all: $(BUILD_DIR)/$(TARGET_EXEC)
+shaders: $(SHADER_GENS)
 clean:
 	rm -r $(BUILD_DIR)
-	rm -r $(SHADER_GEN_DIR)
-shaders: $(SHADER_GENS)
+	rm $(shell find $(SRC_DIR) -name '*.glsl.h')
+# end
 
 # include the .d makefiles
 -include $(DEPS)
-# end

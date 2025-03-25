@@ -1,13 +1,12 @@
-/* #include "test.h" */
-/* #include <stdio.h> */
-#include <stdint.h>
+#define SOKOL_IMPL
+#define SOKOL_GLCORE
 
 #include <sokol/sokol_app.h>
 #include <sokol/sokol_gfx.h>
 #include <sokol/sokol_glue.h>
 #include <sokol/sokol_log.h>
 
-#include "generated/triangle.glsl.h"
+#include "shaders/triangle.glsl.h"
 
 // application state
 static struct {
@@ -24,7 +23,7 @@ static void init(void) {
 
   // a vertex buffer with 3 vertices
   float vertices[] = {// positions            // colors
-                      0.0f,  0.5f,  0.5f, 1.0f, 0.0f, 0.0f, 1.0f,
+                      0.0f,  0.5f,  0.5f, 1.0f, 0.0f, 1.0f, 1.0f,
                       0.5f,  -0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 1.0f,
                       -0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 1.0f};
   state.bind.vertex_buffers[0] = sg_make_buffer(&(sg_buffer_desc){
@@ -34,15 +33,16 @@ static void init(void) {
   sg_shader shd = sg_make_shader(triangle_shader_desc(sg_query_backend()));
 
   // create a pipeline object (default render states are fine for triangle)
-  state.pip = sg_make_pipeline(
-      &(sg_pipeline_desc){.shader = shd,
-                          // if the vertex layout doesn't have gaps, don't need
-                          // to provide strides and offsets
-                          .layout = {.attrs = {[ATTR_triangle_position].format =
-                                                   SG_VERTEXFORMAT_FLOAT3,
-                                               [ATTR_triangle_color0].format =
-                                                   SG_VERTEXFORMAT_FLOAT4}},
-                          .label = "triangle-pipeline"});
+  sg_pipeline_desc pipeline_desc = {
+      .shader = shd,
+      // if the vertex layout doesn't have gaps, don't need
+      // to provide strides and offsets
+      .layout = {.attrs = {[ATTR_triangle_position].format =
+                               SG_VERTEXFORMAT_FLOAT3,
+                           [ATTR_triangle_color0].format =
+                               SG_VERTEXFORMAT_FLOAT4}},
+      .label = "triangle-pipeline"};
+  state.pip = sg_make_pipeline(&pipeline_desc);
 
   // a pass action to clear framebuffer to black
   state.pass_action =
