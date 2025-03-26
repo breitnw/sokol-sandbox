@@ -1,7 +1,8 @@
 let
   pkgs = import <nixpkgs> { };
 
-  sokol-new = (pkgs.sokol.overrideAttrs {
+  # SOKOL-OVERRIDE: Up-to-date override for sokol headers.
+  sokol-override = (pkgs.sokol.overrideAttrs {
     src = pkgs.fetchFromGitHub {
       owner = "floooh";
       repo = "sokol";
@@ -10,6 +11,50 @@ let
     };
   });
 
+  # DCIMGUI: All in one Dear ImGui source distro for C++ and C.
+  dcimgui = pkgs.stdenv.mkDerivation {
+    pname = "dcimgui";
+    version = "1.91.9";
+    src = pkgs.fetchFromGitHub {
+      owner = "floooh";
+      repo = "dcimgui";
+      rev = "3969c14f7c7abda0e4b59d2616b17b7fb9eb0827";
+      sha256 = "sha256-6raw9CEwTFoo9QF72aQsnGQCL3IF76WRkECZdqKBjfQ=";
+    };
+    buildInputs = with pkgs; [ cmake ];
+    buildPhase = ''
+      cmake .
+      make
+    '';
+    installPhase = ''
+      mkdir $out
+      mkdir $out/lib
+      mkdir $out/include
+      cp ../src/cimgui.h $out/include
+      cp ../src/imconfig.h $out/include
+      cp libimgui.a $out/lib
+      cp libimgui-docking.a $out/lib
+    '';
+  };
+
+  # HANDMADEMATH: A simple math library for games and computer graphics.
+  HandmadeMath = pkgs.stdenv.mkDerivation {
+    pname = "HandmadeMath";
+    version = "2.0.0";
+    src = pkgs.fetchFromGitHub {
+      owner = "HandmadeMath";
+      repo = "HandmadeMath";
+      rev = "422bc588e9e8ae580f472f05e47c01a646acff38";
+      sha256 = "sha256-hmQXZRqgJOztvqmekRRnuF8bjPF3ZczKDfCVZv4aDvY=";
+    };
+    installPhase = ''
+      mkdir $out
+      mkdir $out/include
+      cp HandmadeMath.h $out/include/
+    '';
+  };
+
+  # SOKOL-TOOLS-BIN: Binaries for https://github.com/floooh/sokol-tools
   sokol-tools-bin = let
     directory = let
       directories = {
@@ -40,6 +85,7 @@ let
     '';
   };
 
+  # Development shell with sokol and other dependencies
 in pkgs.mkShell rec {
   nativeBuildInputs = with pkgs; [ pkg-config ];
   buildInputs = with pkgs; [
@@ -47,7 +93,9 @@ in pkgs.mkShell rec {
     llvmPackages.clang-tools
 
     # libraries
-    sokol-new
+    sokol-override
+    dcimgui
+    HandmadeMath
     libGL.dev
     alsa-lib.dev
     xorg.libX11.dev

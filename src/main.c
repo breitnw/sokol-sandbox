@@ -1,52 +1,109 @@
-#include "main.h"
-#include "shaders/triangle.glsl.h"
 
-static void init(void) {
+/* // SOKOL HEADERS */
+#define SOKOL_IMPL
+#define SOKOL_GLCORE
+#include <sokol/sokol_app.h>
+#include <sokol/sokol_gfx.h>
+#include <sokol/sokol_glue.h>
+#include <sokol/sokol_log.h>
+
+/* // HANDMADE MATH HEADERS */
+/* #define HANDMADE_MATH_IMPLEMENTATION */
+/* #define HANDMADE_MATH_NO_SSE */
+/* #include <HandmadeMath.h> */
+
+/* // SOKOL UTILS */
+/* #include <sokol/util/sokol_debugtext.h> */
+/* #include <sokol/util/sokol_gl.h> */
+
+/* // SHADER CODE */
+/* #include "shaders/shapes-sapp.glsl.h" */
+
+// =======================================================================================
+
+#include "cimgui.h"
+#include "sokol/util/sokol_imgui.h"
+
+typedef struct {
+  uint64_t last_time;
+  bool show_test_window;
+  bool show_another_window;
+  sg_pass_action pass_action;
+} state_t;
+static state_t state;
+
+void init(void) {
+  // setup sokol-gfx, sokol-time and sokol-imgui
   sg_setup(&(sg_desc){
       .environment = sglue_environment(),
       .logger.func = slog_func,
   });
 
-  // a vertex buffer with 3 vertices
-  float vertices[] = {// positions            // colors
-                      0.0f,  0.5f,  0.5f, 1.0f, 0.0f, 1.0f, 1.0f,
-                      0.5f,  -0.5f, 0.5f, 0.0f, 1.0f, 0.0f, 1.0f,
-                      -0.5f, -0.5f, 0.5f, 0.0f, 0.0f, 1.0f, 1.0f};
-  state.bind.vertex_buffers[0] = sg_make_buffer(&(sg_buffer_desc){
-      .data = SG_RANGE(vertices), .label = "triangle-vertices"});
+  // use sokol-imgui with all default-options (we're not doing
+  // multi-sampled rendering or using non-default pixel formats)
+  simgui_setup(&(simgui_desc_t){
+      .logger.func = slog_func,
+  });
 
-  // create shader from code-generated sg_shader_desc
-  sg_shader shd = sg_make_shader(triangle_shader_desc(sg_query_backend()));
-
-  // create a pipeline object (default render states are fine for triangle)
-  sg_pipeline_desc pipeline_desc = {
-      .shader = shd,
-      // if the vertex layout doesn't have gaps, don't need
-      // to provide strides and offsets
-      .layout = {.attrs = {[ATTR_triangle_position].format =
-                               SG_VERTEXFORMAT_FLOAT3,
-                           [ATTR_triangle_color0].format =
-                               SG_VERTEXFORMAT_FLOAT4}},
-      .label = "triangle-pipeline"};
-  state.pip = sg_make_pipeline(&pipeline_desc);
-
-  // a pass action to clear framebuffer to black
-  state.pass_action =
-      (sg_pass_action){.colors[0] = {.load_action = SG_LOADACTION_CLEAR,
-                                     .clear_value = {0.0f, 0.0f, 0.0f, 1.0f}}};
+  /* initialize application state */
+  state = (state_t){
+      .show_test_window = true,
+      .pass_action = {.colors[0] = {.load_action = SG_LOADACTION_CLEAR,
+                                    .clear_value = {0.7f, 0.5f, 0.0f, 1.0f}}}};
 }
 
 void frame(void) {
+  const int width = sapp_width();
+  const int height = sapp_height();
+  simgui_new_frame(&(simgui_frame_desc_t){.width = width,
+                                          .height = height,
+                                          .delta_time = sapp_frame_duration(),
+                                          .dpi_scale = sapp_dpi_scale()});
+
+  // 1. Show a simple window
+  // Tip: if we don't call ImGui::Begin()/ImGui::End() the widgets appears in a
+  // window automatically called "Debug"
+  static float f = 0.0f;
+  igText("Hello, world!");
+  igSliderFloatEx("float", &f, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_None);
+  igColorEdit3("clear color", (float *)&state.pass_action.colors[0].clear_value,
+               0);
+  if (igButton("Test Window"))
+    state.show_test_window ^= 1;
+  if (igButton("Another Window"))
+    state.show_another_window ^= 1;
+  igText("Application average %.3f ms/frame (%.1f FPS)",
+         1000.0f / igGetIO()->Framerate, igGetIO()->Framerate);
+
+  // 2. Show another simple window, this time using an explicit Begin/End pair
+  if (state.show_another_window) {
+    igSetNextWindowSize((ImVec2){200, 100}, ImGuiCond_FirstUseEver);
+    igBegin("Another Window", &state.show_another_window, 0);
+    igText("Hello");
+    igEnd();
+  }
+
+  // 3. Show the ImGui test window. Most of the sample code is in
+  // ImGui::ShowDemoWindow()
+  if (state.show_test_window) {
+    igSetNextWindowPos((ImVec2){460, 20}, ImGuiCond_FirstUseEver);
+    igShowDemoWindow(0);
+  }
+
+  // the sokol_gfx draw pass
   sg_begin_pass(
       &(sg_pass){.action = state.pass_action, .swapchain = sglue_swapchain()});
-  sg_apply_pipeline(state.pip);
-  sg_apply_bindings(&state.bind);
-  sg_draw(0, 3, 1);
+  simgui_render();
   sg_end_pass();
   sg_commit();
 }
 
-void cleanup(void) { sg_shutdown(); }
+void cleanup(void) {
+  simgui_shutdown();
+  sg_shutdown();
+}
+
+void input(const sapp_event *event) { simgui_handle_event(event); }
 
 sapp_desc sokol_main(int argc, char *argv[]) {
   (void)argc;
@@ -55,10 +112,13 @@ sapp_desc sokol_main(int argc, char *argv[]) {
       .init_cb = init,
       .frame_cb = frame,
       .cleanup_cb = cleanup,
-      .width = 640,
-      .height = 480,
-      .window_title = "Triangle (sokol-app)",
+      .event_cb = input,
+      .width = 1024,
+      .height = 768,
+      .window_title = "cimgui (sokol-app)",
+      .ios_keyboard_resizes_canvas = false,
       .icon.sokol_default = true,
+      .enable_clipboard = true,
       .logger.func = slog_func,
   };
 }
