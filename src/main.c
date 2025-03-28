@@ -1,7 +1,5 @@
 
-/* // SOKOL HEADERS */
-#define SOKOL_IMPL
-#define SOKOL_GLCORE
+// SOKOL HEADERS
 #include <sokol/sokol_app.h>
 #include <sokol/sokol_gfx.h>
 #include <sokol/sokol_glue.h>
@@ -14,15 +12,15 @@
 
 /* // SOKOL UTILS */
 /* #include <sokol/util/sokol_debugtext.h> */
-/* #include <sokol/util/sokol_gl.h> */
+#include <sokol/util/sokol_gl.h>
 
 /* // SHADER CODE */
 /* #include "shaders/shapes-sapp.glsl.h" */
 
-// =======================================================================================
-
 #include "cimgui.h"
 #include "sokol/util/sokol_imgui.h"
+
+// =============================================================================
 
 typedef struct {
   uint64_t last_time;
@@ -48,47 +46,33 @@ void init(void) {
   /* initialize application state */
   state = (state_t){
       .show_test_window = true,
-      .pass_action = {.colors[0] = {.load_action = SG_LOADACTION_CLEAR,
-                                    .clear_value = {0.7f, 0.5f, 0.0f, 1.0f}}}};
+      .pass_action.colors[0] = {
+          .load_action = SG_LOADACTION_CLEAR,
+          .clear_value = {0.7f, 0.5f, 0.0f, 1.0f}}};
 }
 
 void frame(void) {
   const int width = sapp_width();
   const int height = sapp_height();
-  simgui_new_frame(&(simgui_frame_desc_t){.width = width,
-                                          .height = height,
-                                          .delta_time = sapp_frame_duration(),
-                                          .dpi_scale = sapp_dpi_scale()});
+  simgui_new_frame(&(simgui_frame_desc_t){
+      .width = width,
+      .height = height,
+      .delta_time = sapp_frame_duration()});
 
   // 1. Show a simple window
   // Tip: if we don't call ImGui::Begin()/ImGui::End() the widgets appears in a
   // window automatically called "Debug"
-  static float f = 0.0f;
-  igText("Hello, world!");
-  igSliderFloatEx("float", &f, 0.0f, 1.0f, "%.3f", ImGuiSliderFlags_None);
-  igColorEdit3("clear color", (float *)&state.pass_action.colors[0].clear_value,
-               0);
-  if (igButton("Test Window"))
-    state.show_test_window ^= 1;
-  if (igButton("Another Window"))
-    state.show_another_window ^= 1;
-  igText("Application average %.3f ms/frame (%.1f FPS)",
-         1000.0f / igGetIO()->Framerate, igGetIO()->Framerate);
-
-  // 2. Show another simple window, this time using an explicit Begin/End pair
-  if (state.show_another_window) {
-    igSetNextWindowSize((ImVec2){200, 100}, ImGuiCond_FirstUseEver);
-    igBegin("Another Window", &state.show_another_window, 0);
-    igText("Hello");
-    igEnd();
-  }
-
-  // 3. Show the ImGui test window. Most of the sample code is in
-  // ImGui::ShowDemoWindow()
-  if (state.show_test_window) {
-    igSetNextWindowPos((ImVec2){460, 20}, ImGuiCond_FirstUseEver);
-    igShowDemoWindow(0);
-  }
+  igBegin("Test", NULL, 0);
+  igText("Hello, world!!!!");
+  igColorEdit3(
+      "clear color",
+      (float *)&state.pass_action.colors[0].clear_value,
+      0);
+  igText(
+      "Application average %.3f ms/frame (%.1f FPS)",
+      1000.0f / igGetIO()->Framerate,
+      igGetIO()->Framerate);
+  igEnd();
 
   // the sokol_gfx draw pass
   sg_begin_pass(
@@ -115,10 +99,8 @@ sapp_desc sokol_main(int argc, char *argv[]) {
       .event_cb = input,
       .width = 1024,
       .height = 768,
-      .window_title = "cimgui (sokol-app)",
-      .ios_keyboard_resizes_canvas = false,
+      .window_title = "SOKOL",
       .icon.sokol_default = true,
-      .enable_clipboard = true,
       .logger.func = slog_func,
   };
 }
